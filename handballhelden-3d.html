@@ -5,7 +5,7 @@
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#100d1d;color:#fff;font-family:system-ui,Arial,sans-serif}#room{height:100svh;min-height:530px;position:relative;overflow:hidden;background:#110d1e}canvas{display:block;width:100%;height:100%}.overlay{position:absolute;left:clamp(16px,4vw,65px);top:24px;pointer-events:none;text-shadow:0 2px 16px #000}.overlay small{letter-spacing:.24em;color:#b5e4f6;font-weight:800}.overlay h1{font-size:clamp(2rem,5vw,4.7rem);line-height:.94;letter-spacing:-.07em;margin:14px 0}.overlay p{color:#d8d0e8;max-width:340px}.down{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);color:white;text-decoration:none;padding:12px 24px;background:#271d3de8;border:1px solid #b99ddd;border-radius:30px;font-weight:750;text-align:center;white-space:nowrap}.help{position:absolute;right:22px;top:25px;color:#d9c9e9;text-align:right;font-size:.82rem}.tip{position:absolute;display:none;background:#23172eea;border:1px solid #caa6eb;padding:10px;border-radius:12px;pointer-events:none;z-index:5;max-width:220px}section#liste{padding:45px 15px 70px;max-width:1150px;margin:auto}h2{font-size:clamp(1.7rem,4vw,3rem);letter-spacing:-.04em;margin:0 0 8px}.muted{color:#c5b8d3}iframe{width:100%;height:1300px;border:1px solid #574568;border-radius:18px;background:#0c1727}#error{color:#ffd7a3}
 @media(max-width:600px){.help{top:auto;bottom:90px;right:14px}.overlay p{max-width:230px;font-size:.85rem}iframe{height:1500px}}
 </style></head><body>
-<div id="room"><div id="scene"></div><div class="overlay"><small>OSTFRIESLAND × HANDBALL</small><h1>HANDBALL<br>HELDEN.</h1><p>Eine neue 3D-Welt mit freundlichen Cartoon-Charakteren, individuellen Wegen und Winken auf Klick.</p><p id="count">Lade Nominierte …</p></div><div class="help">Ziehen: drehen<br>Mausrad: zoomen<br>Figur anklicken: winken 👋</div><div id="tip" class="tip"></div><a class="down" href="#liste">↓ Peter, Judith & Rangliste</a></div>
+<div id="room"><div id="scene"></div><div class="overlay"><small>OSTFRIESLAND × HANDBALL</small><h1>HANDBALL<br>HELDEN.</h1><p>Alle Nominierten als bunte Handbälle – sie hüpfen wild wie Popcorn!</p><p id="count">Lade Nominierte …</p></div><div class="help">Ziehen: drehen<br>Mausrad: zoomen<br>Ball anklicken: extra hoher Sprung!</div><div id="tip" class="tip"></div><a class="down" href="#liste">↓ Peter, Judith & Rangliste</a></div>
 <section id="liste"><h2>Peter, Judith & alle Nominierten</h2><p class="muted">Die bewährte Rangliste mit den bestehenden Such- und Filtermöglichkeiten.</p><iframe src="./" title="Bestehender Handballhelden-Monitor"></iframe><p id="error"></p></section>
 <script type="module">
 const host=document.querySelector('#scene'),tip=document.querySelector('#tip'),count=document.querySelector('#count');
@@ -28,65 +28,42 @@ const halo=new T.Mesh(new T.TorusGeometry(3.6,.09,8,56),flat(0xffce85));halo.rot
 const r=await fetch('daten.json?v='+Date.now());if(!r.ok)throw Error('daten.json nicht gefunden');
 const data=await r.json(),people=(data.personen||[]).slice().sort((a,b)=>Number(b.votes)-Number(a.votes)||String(a.id).localeCompare(String(b.id)));
 const n=people.length;count.textContent=n.toLocaleString('de-DE')+' Menschen im Raum';
-const meshes=[],dummy=new T.Object3D(),tmpColor=new T.Color(),locations=[];
-const skin=[0xffd2b1,0xd7a481,0xa66b50,0xf2c29c,0x7c513c],tops=[0x236ab0,0x327b8d,0xc05c44,0x5d66a3,0x648a6e,0x3f6586,0x9d6a4d],pants=[0x192f48,0x253b59,0x343044,0x314353];
-function part(geometry,kind){const mesh=new T.InstancedMesh(geometry,new T.MeshLambertMaterial({color:0xffffff,roughness:.85}),n);mesh.instanceMatrix.setUsage(T.StaticDrawUsage);mesh.userData.kind=kind;meshes.push(mesh);scene.add(mesh);return mesh}
-const torso=part(new T.SphereGeometry(.65,12,8),'top');
-const head=part(new T.SphereGeometry(.62,14,12),'skin');
-const hair=part(new T.SphereGeometry(.66,14,10,0,Math.PI*2,0,Math.PI*.52),'hair');
-const eyes=part(new T.SphereGeometry(.095,8,6),'eyes');
-const pupils=part(new T.SphereGeometry(.052,8,6),'pupils');
-const nose=part(new T.SphereGeometry(.09,8,6),'skin');
-const smile=part(new T.TorusGeometry(.17,.028,5,12,Math.PI),'smile');
-const cheeks=part(new T.SphereGeometry(.105,8,6),'cheeks');
-const armL=part(new T.CylinderGeometry(.17,.19,1.2,6),'skin');
-const armR=part(new T.CylinderGeometry(.17,.19,1.2,6),'skin');
-const legL=part(new T.CylinderGeometry(.22,.23,1.25,6),'pants');
-const legR=part(new T.CylinderGeometry(.22,.23,1.25,6),'pants');
-const shoeL=part(new T.BoxGeometry(.44,.24,.67),'shoes');
-const shoeR=part(new T.BoxGeometry(.44,.24,.67),'shoes');
-const special=[];const styles=Array.from({length:15},(_,i)=>({hair:i%3,build:.86+(i%5)*.07}));
-const placements=[[torso,0,2.0,0,0],[head,0,3.05,0,0],[hair,0,3.19,0,0],
-[armL,-.66,2.02,0,-.20],[armR,.66,2.02,0,.20],[legL,-.23,.77,0,-.045],[legR,.23,.77,0,.045],[shoeL,-.23,.12,.16,0],[shoeR,.23,.12,.16,0],
-[eyes,-.23,3.13,.555,0],[eyes,.23,3.13,.555,0],[pupils,-.23,3.13,.635,0],[pupils,.23,3.13,.635,0],
-[nose,0,2.98,.605,0],[smile,0,2.85,.585,0],[cheeks,-.39,2.94,.47,0],[cheeks,.39,2.94,.47,0]];
-const colors=[0,0,0,0,0,0,0,0,0];
+const dummy=new T.Object3D(),locations=[],special=[];
+const geometry=new T.SphereGeometry(.8,16,12);
+const ballMesh=new T.InstancedMesh(geometry,new T.MeshLambertMaterial({color:0xffffff}),n);
+ballMesh.instanceMatrix.setUsage(T.DynamicDrawUsage);scene.add(ballMesh);
+const colors=[0xf4aa42,0x58b5e5,0xe96b76,0x75c9a1,0xc2a0f1,0xf5d36c,0x86c8da,0xf39b78];
 people.forEach((p,i)=>{
- const id=String(p.id),focus=id==='1152'||id==='311';
+ const focus=String(p.id)==='1152'||String(p.id)==='311';
  const t=i/Math.max(1,n-1),angle=i*2.399963229728653,radius=9+Math.sqrt(t)*65;
- const x=Math.cos(angle)*radius,z=-28+Math.sin(angle)*radius;
- const size=focus?1.22:styles[i%15].build;
- const shirt=focus?(id==='1152'?0x2f90d5:0xe46c55):tops[i%tops.length];
- const palette={top:shirt,skin:skin[i%skin.length],hair:[0x29222c,0x6d4832,0xb88a4d,0x473f3a,0xd0b189][i%5],pants:pants[i%pants.length],shoes:0xe3e5e5,eyes:0xffffff,pupils:0x26344b,smile:0x793b45,cheeks:0xe58b8f};
- const rot=Math.sin(i*1.71)*.6;
- for(let j=0;j<placements.length;j++){
-  const [mesh,dx,dy,dz,rz]=placements[j];dummy.position.set(x+dx*size,dy*size,z+dz*size);
-  dummy.rotation.set(0,rot,rz);dummy.scale.setScalar(size);if(j===0)dummy.scale.set(size*.95,size*1.25,size*.72);if(j===14)dummy.rotation.x=Math.PI;dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
-  tmpColor.setHex(palette[mesh.userData.kind]);mesh.setColorAt(i,tmpColor);
- }
- locations.push({x,z,size});if(focus)special.push({p,x,z,size});
+ const x=Math.cos(angle)*radius,z=-28+Math.sin(angle)*radius,size=focus?1.45:.7+(i%5)*.055;
+ locations.push({x,z,size});
+ ballMesh.setColorAt(i,new T.Color(focus?(String(p.id)==='1152'?0x53c6ff:0xff819c):colors[i%colors.length]));
+ if(focus)special.push({p,x,z,size});
 });
-meshes.forEach(m=>{m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true});
+if(ballMesh.instanceColor)ballMesh.instanceColor.needsUpdate=true;
+const seams=new T.InstancedMesh(new T.TorusGeometry(.805,.018,4,24),new T.MeshBasicMaterial({color:0x27334a,transparent:true,opacity:.45}),n);
+seams.instanceMatrix.setUsage(T.DynamicDrawUsage);scene.add(seams);
 const markers=[];
 for(const sp of special){
- const marker=new T.Mesh(new T.RingGeometry(.95,1.08,32),new T.MeshBasicMaterial({color:String(sp.p.id)==='1152'?0x75c7ff:0xffb57c,side:T.DoubleSide}));
- marker.rotation.x=-Math.PI/2;marker.position.set(sp.x,.03,sp.z);scene.add(marker);
- const el=document.createElement('div');el.style.cssText='position:absolute;z-index:3;pointer-events:none;background:#142238db;border:1px solid #85b8df;border-radius:12px;padding:5px 10px;color:white;font-size:13px;font-weight:750;white-space:nowrap;transform:translate(-50%,-100%)';el.textContent=String(sp.p.id)==='1152'?'Peter Adena':'Judith Schoolmann';host.appendChild(el);markers.push({el,sp});
+ const el=document.createElement('div');
+ el.style.cssText='position:absolute;z-index:3;pointer-events:none;background:#142238df;border:1px solid #85b8df;border-radius:12px;padding:5px 10px;color:white;font-size:13px;font-weight:750;white-space:nowrap;transform:translate(-50%,-100%)';
+ el.textContent=String(sp.p.id)==='1152'?'Peter Adena':'Judith Schoolmann';host.appendChild(el);markers.push({el,sp});
 }
-let yaw=0,tilt=.47,dist=99,drag=false,lastX=0,lastY=0,downX=0,downY=0,needsRender=true;let wavingIndex=-1,wavingUntil=0;
+let yaw=0,tilt=.47,dist=99,drag=false,lastX=0,lastY=0,downX=0,downY=0,needsRender=true;let boostedIndex=-1,boostedUntil=0;
 const target=new T.Vector3(0,3,-28),ray=new T.Raycaster(),mouse=new T.Vector2();
-function pick(e){const b=renderer.domElement.getBoundingClientRect();mouse.set((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1);ray.setFromCamera(mouse,camera);const hits=ray.intersectObjects(meshes,false);return hits.length?people[hits[0].instanceId]:null}
+function pick(e){const b=renderer.domElement.getBoundingClientRect();mouse.set((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1);ray.setFromCamera(mouse,camera);const hits=ray.intersectObject(ballMesh,false);return hits.length?people[hits[0].instanceId]:null}
 renderer.domElement.addEventListener('pointerdown',e=>{drag=true;downX=lastX=e.clientX;downY=lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)});
 renderer.domElement.addEventListener('pointerup',e=>{
  const clicked=Math.hypot(e.clientX-downX,e.clientY-downY)<7;
  drag=false;
  if(clicked){
   const p=pick(e);
-  if(p){wavingIndex=people.indexOf(p);wavingUntil=performance.now()+3400;needsRender=true;
+  if(p){boostedIndex=people.indexOf(p);boostedUntil=performance.now()+2200;needsRender=true;
    tip.style.display='block';const b=host.getBoundingClientRect();
    tip.style.left=Math.max(4,Math.min(e.clientX-b.left+12,b.width-225))+'px';
    tip.style.top=Math.max(5,e.clientY-b.top-45)+'px';
-   tip.textContent=p.name+' winkt dir zu! 👋 · '+Number(p.votes||0).toLocaleString('de-DE')+' Stimmen';
+   tip.textContent=p.name+' macht einen Riesensprung! 🏐 · '+Number(p.votes||0).toLocaleString('de-DE')+' Stimmen';
   }
  }
 });
@@ -96,50 +73,33 @@ renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();dist=Math.ma
 function resize(){const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);needsRender=true}
 window.addEventListener('resize',resize);resize();
 let frame=0,last=0;
-// Small independent walking loops, never leaving the vote-based neighborhood.
-// Each person independently chooses a sequence of smooth, irregular short walks.
-// Different seeds and durations avoid synchronized circular motion.
-function rand(i,k){let x=Math.sin((i+1)*127.1+(k+1)*311.7)*43758.5453;return x-Math.floor(x)}
-function walk(loc,i,now){
- const duration=3200+rand(i,7)*5700;
- const segment=Math.floor(now/duration),t=(now/duration)-segment;
- const smooth=t*t*(3-2*t);
- const radius=.75+rand(i,4)*2.3;
- function waypoint(k){
-  const angle=rand(i,k*3+11)*Math.PI*2;
-  const dist=Math.sqrt(rand(i,k*3+12))*radius;
-  return {x:loc.x+Math.cos(angle)*dist,z:loc.z+Math.sin(angle)*dist};
- }
- const a=waypoint(segment),b=waypoint(segment+1);
- const x=a.x+(b.x-a.x)*smooth,z=a.z+(b.z-a.z)*smooth;
- const dx=b.x-a.x,dz=b.z-a.z;
- return {x,z,step:Math.sin(now*.0042+i*1.3),facing:Math.atan2(dx,dz),moving:Math.hypot(dx,dz)>.1};
+// Popcorn-machine motion: independent fast bounces and lively lateral movement.
+function bounce(loc,i,now){
+ const speed=.0016+(i%11)*.00021,phase=now*speed+i*2.399963;
+ const hop=Math.abs(Math.sin(now*(.0023+(i%7)*.00022)+i*1.72));
+ const range=.65+(i%9)*.22;
+ const x=loc.x+Math.sin(phase*1.17+i)*range,z=loc.z+Math.cos(phase*.83+i*2.1)*range;
+ const extra=i===boostedIndex&&now<boostedUntil?3.6*Math.abs(Math.sin((boostedUntil-now)*.006)):0;
+ return {x,z,y:loc.size+hop*hop*(1.2+(i%7)*.45)+extra,angle:phase*2.2};
 }
 function animate(now){
  requestAnimationFrame(animate);
- if(now-last<65&&!needsRender)return;
+ if(now-last<55&&!needsRender)return;
  last=now;needsRender=false;frame++;
  camera.position.set(Math.sin(yaw)*dist*Math.cos(tilt),3+Math.sin(tilt)*dist,-28+Math.cos(yaw)*dist*Math.cos(tilt));camera.lookAt(target);
- // All nine body parts share the same walking position. Instancing keeps GPU draw calls low.
  for(let i=0;i<n;i++){
-  const loc=locations[i],w=walk(loc,i,now),bob=Math.abs(w.step)*.055*loc.size;
-  for(let j=0;j<placements.length;j++){
-   const [mesh,dx,dy,dz,rz]=placements[j];
-   const isWaving=i===wavingIndex&&now<wavingUntil;
-   const stride=(j===5?-1:j===6?1:j===3?1:j===4?-1:0)*w.step*.22;
-   const wave=j===4&&isWaving ? -2.5+Math.sin(now*.015)*.32 : 0;
-   const lift=(j===5?Math.max(0,w.step):j===6?Math.max(0,-w.step):0)*.13*loc.size;
-   const a=w.facing,offX=(dx*Math.cos(a)+dz*Math.sin(a))*loc.size,offZ=(-dx*Math.sin(a)+dz*Math.cos(a))*loc.size;
-   dummy.position.set(w.x+offX,dy*loc.size+bob+lift,w.z+offZ);
-   dummy.rotation.set(0,a,rz+stride+wave);dummy.scale.setScalar(loc.size);if(j===0)dummy.scale.set(loc.size*.95,loc.size*1.25,loc.size*.72);if(j===14)dummy.rotation.x=Math.PI;dummy.updateMatrix();
-   mesh.setMatrixAt(i,dummy.matrix);
-  }
+  const loc=locations[i],b=bounce(loc,i,now);
+  dummy.position.set(b.x,b.y,b.z);
+  dummy.rotation.set(b.angle*.7,b.angle,b.angle*.38);
+  dummy.scale.setScalar(loc.size);dummy.updateMatrix();ballMesh.setMatrixAt(i,dummy.matrix);
+  dummy.rotation.set(Math.PI/2+b.angle*.4,b.angle*.7,b.angle*.5);
+  dummy.updateMatrix();seams.setMatrixAt(i,dummy.matrix);
  }
- for(const mesh of meshes)mesh.instanceMatrix.needsUpdate=true;
+ ballMesh.instanceMatrix.needsUpdate=true;seams.instanceMatrix.needsUpdate=true;
  renderer.render(scene,camera);
  for(const {el,sp} of markers){
-  const idx=people.findIndex(p=>String(p.id)===String(sp.p.id)),w=idx>=0?walk(locations[idx],idx,now):{x:sp.x,z:sp.z};
-  const pos=new T.Vector3(w.x,4.2*sp.size,w.z).project(camera);
+  const idx=people.findIndex(p=>String(p.id)===String(sp.p.id)),b=idx>=0?bounce(locations[idx],idx,now):{x:sp.x,z:sp.z,y:sp.size};
+  const pos=new T.Vector3(b.x,b.y+sp.size*1.65,b.z).project(camera);
   const visible=pos.z<1&&pos.z>-1;el.style.display=visible?'block':'none';
   if(visible){el.style.left=(pos.x*.5+.5)*host.clientWidth+'px';el.style.top=(-pos.y*.5+.5)*host.clientHeight+'px'}
  }
