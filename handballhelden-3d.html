@@ -76,21 +76,40 @@ renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();dist=Math.ma
 function resize(){const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);needsRender=true}
 window.addEventListener('resize',resize);resize();
 let frame=0,last=0;
-function animate(now){requestAnimationFrame(animate);if(now-last<65&&!needsRender)return;last=now;needsRender=false;frame++;
-camera.position.set(Math.sin(yaw)*dist*Math.cos(tilt),3+Math.sin(tilt)*dist,-28+Math.cos(yaw)*dist*Math.cos(tilt));camera.lookAt(target);
-// Gentle Wii-like idle motion: only arms and heads change, batched as instanced geometry.
-for(const [mesh,j] of [[armL,3],[armR,4],[head,1],[hair,2]]){
- for(let i=0;i<n;i++){
-  const [_,dx,dy,dz,rz]=placements[j],loc=locations[i],phase=now*.0012+i*1.9;
-  const sway=Math.sin(phase)*.12;
-  dummy.position.set(loc.x+dx*loc.size,dy*loc.size+(j<3?Math.sin(phase)*.025:0),loc.z+dz*loc.size);
-  dummy.rotation.set(0,Math.sin(i*1.71)*.6,rz+(j>=3?(j===3?-1:1)*sway:0));
-  dummy.scale.setScalar(loc.size);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
- }
- mesh.instanceMatrix.needsUpdate=true;
+// Small independent walking loops, never leaving the vote-based neighborhood.
+function walk(loc,i,now){
+ const speed=.00017+(i%7)*.000013,phase=now*speed+i*2.399963;
+ const range=.5+(i%6)*.19;
+ return {x:loc.x+Math.cos(phase)*range-Math.cos(i*2.399963)*range,
+         z:loc.z+Math.sin(phase)*range-Math.sin(i*2.399963)*range,
+         step:Math.sin(now*.0032+i*1.7),facing:phase+Math.PI*.5};
 }
-renderer.render(scene,camera);
-for(const {el,sp} of markers){const pos=new T.Vector3(sp.x,4.2*sp.size,sp.z).project(camera);const visible=pos.z<1&&pos.z>-1;el.style.display=visible?'block':'none';if(visible){el.style.left=(pos.x*.5+.5)*host.clientWidth+'px';el.style.top=(-pos.y*.5+.5)*host.clientHeight+'px'}}
+function animate(now){
+ requestAnimationFrame(animate);
+ if(now-last<95&&!needsRender)return;
+ last=now;needsRender=false;frame++;
+ camera.position.set(Math.sin(yaw)*dist*Math.cos(tilt),3+Math.sin(tilt)*dist,-28+Math.cos(yaw)*dist*Math.cos(tilt));camera.lookAt(target);
+ // All nine body parts share the same walking position. Instancing keeps GPU draw calls low.
+ for(let i=0;i<n;i++){
+  const loc=locations[i],w=walk(loc,i,now),bob=Math.abs(w.step)*.055*loc.size;
+  for(let j=0;j<placements.length;j++){
+   const [mesh,dx,dy,dz,rz]=placements[j];
+   const stride=(j===5?-1:j===6?1:j===3?1:j===4?-1:0)*w.step*.22;
+   const lift=(j===5?Math.max(0,w.step):j===6?Math.max(0,-w.step):0)*.13*loc.size;
+   const a=w.facing,offX=(dx*Math.cos(a)+dz*Math.sin(a))*loc.size,offZ=(-dx*Math.sin(a)+dz*Math.cos(a))*loc.size;
+   dummy.position.set(w.x+offX,dy*loc.size+bob+lift,w.z+offZ);
+   dummy.rotation.set(0,a,rz+stride);dummy.scale.setScalar(loc.size);dummy.updateMatrix();
+   mesh.setMatrixAt(i,dummy.matrix);
+  }
+ }
+ for(const mesh of meshes)mesh.instanceMatrix.needsUpdate=true;
+ renderer.render(scene,camera);
+ for(const {el,sp} of markers){
+  const idx=people.findIndex(p=>String(p.id)===String(sp.p.id)),w=idx>=0?walk(locations[idx],idx,now):{x:sp.x,z:sp.z};
+  const pos=new T.Vector3(w.x,4.2*sp.size,w.z).project(camera);
+  const visible=pos.z<1&&pos.z>-1;el.style.display=visible?'block':'none';
+  if(visible){el.style.left=(pos.x*.5+.5)*host.clientWidth+'px';el.style.top=(-pos.y*.5+.5)*host.clientHeight+'px'}
+ }
 }
 animate(0);
 }catch(e){count.textContent='3D konnte nicht geladen werden';document.querySelector('#error').textContent=String(e)}
