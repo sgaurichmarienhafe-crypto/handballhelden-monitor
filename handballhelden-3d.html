@@ -5,7 +5,7 @@
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#100d1d;color:#fff;font-family:system-ui,Arial,sans-serif}#room{height:100svh;min-height:530px;position:relative;overflow:hidden;background:#110d1e}canvas{display:block;width:100%;height:100%}.overlay{position:absolute;left:clamp(16px,4vw,65px);top:24px;pointer-events:none;text-shadow:0 2px 16px #000}.overlay small{letter-spacing:.24em;color:#b5e4f6;font-weight:800}.overlay h1{font-size:clamp(2rem,5vw,4.7rem);line-height:.94;letter-spacing:-.07em;margin:14px 0}.overlay p{color:#d8d0e8;max-width:340px}.down{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);color:white;text-decoration:none;padding:12px 24px;background:#271d3de8;border:1px solid #b99ddd;border-radius:30px;font-weight:750;text-align:center;white-space:nowrap}.help{position:absolute;right:22px;top:25px;color:#d9c9e9;text-align:right;font-size:.82rem}.tip{position:absolute;display:none;background:#23172eea;border:1px solid #caa6eb;padding:10px;border-radius:12px;pointer-events:none;z-index:5;max-width:220px}section#liste{padding:45px 15px 70px;max-width:1150px;margin:auto}h2{font-size:clamp(1.7rem,4vw,3rem);letter-spacing:-.04em;margin:0 0 8px}.muted{color:#c5b8d3}iframe{width:100%;height:1300px;border:1px solid #574568;border-radius:18px;background:#0c1727}#error{color:#ffd7a3}
 @media(max-width:600px){.help{top:auto;bottom:90px;right:14px}.overlay p{max-width:230px;font-size:.85rem}iframe{height:1500px}}
 </style></head><body>
-<div id="room"><div id="scene"></div><div class="overlay"><small>OSTFRIESLAND × HANDBALL</small><h1>HANDBALL<br>HELDEN.</h1><p>Alle Nominierten als kleine 3D-Avatare – mit Leben im Raum.</p><p id="count">Lade Nominierte …</p></div><div class="help">Ziehen: drehen<br>Mausrad: zoomen<br>Figur: Name & Stimmen</div><div id="tip" class="tip"></div><a class="down" href="#liste">↓ Peter, Judith & Rangliste</a></div>
+<div id="room"><div id="scene"></div><div class="overlay"><small>OSTFRIESLAND × HANDBALL</small><h1>HANDBALL<br>HELDEN.</h1><p>Alle Nominierten als kleine 3D-Avatare – mit Leben im Raum.</p><p id="count">Lade Nominierte …</p></div><div class="help">Ziehen: drehen<br>Mausrad: zoomen<br>Figur anklicken: winken 👋</div><div id="tip" class="tip"></div><a class="down" href="#liste">↓ Peter, Judith & Rangliste</a></div>
 <section id="liste"><h2>Peter, Judith & alle Nominierten</h2><p class="muted">Die bewährte Rangliste mit den bestehenden Such- und Filtermöglichkeiten.</p><iframe src="./" title="Bestehender Handballhelden-Monitor"></iframe><p id="error"></p></section>
 <script type="module">
 const host=document.querySelector('#scene'),tip=document.querySelector('#tip'),count=document.querySelector('#count');
@@ -65,11 +65,23 @@ for(const sp of special){
  marker.rotation.x=-Math.PI/2;marker.position.set(sp.x,.03,sp.z);scene.add(marker);
  const el=document.createElement('div');el.style.cssText='position:absolute;z-index:3;pointer-events:none;background:#142238db;border:1px solid #85b8df;border-radius:12px;padding:5px 10px;color:white;font-size:13px;font-weight:750;white-space:nowrap;transform:translate(-50%,-100%)';el.textContent=String(sp.p.id)==='1152'?'Peter Adena':'Judith Schoolmann';host.appendChild(el);markers.push({el,sp});
 }
-let yaw=0,tilt=.47,dist=99,drag=false,lastX=0,lastY=0,needsRender=true;
+let yaw=0,tilt=.47,dist=99,drag=false,lastX=0,lastY=0,downX=0,downY=0,needsRender=true;let wavingIndex=-1,wavingUntil=0;
 const target=new T.Vector3(0,3,-28),ray=new T.Raycaster(),mouse=new T.Vector2();
 function pick(e){const b=renderer.domElement.getBoundingClientRect();mouse.set((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1);ray.setFromCamera(mouse,camera);const hits=ray.intersectObjects(meshes,false);return hits.length?people[hits[0].instanceId]:null}
-renderer.domElement.addEventListener('pointerdown',e=>{drag=true;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)});
-renderer.domElement.addEventListener('pointerup',()=>drag=false);
+renderer.domElement.addEventListener('pointerdown',e=>{drag=true;downX=lastX=e.clientX;downY=lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)});
+renderer.domElement.addEventListener('pointerup',e=>{
+ const clicked=Math.hypot(e.clientX-downX,e.clientY-downY)<7;
+ drag=false;
+ if(clicked){
+  const p=pick(e);
+  if(p){wavingIndex=people.indexOf(p);wavingUntil=performance.now()+3400;needsRender=true;
+   tip.style.display='block';const b=host.getBoundingClientRect();
+   tip.style.left=Math.max(4,Math.min(e.clientX-b.left+12,b.width-225))+'px';
+   tip.style.top=Math.max(5,e.clientY-b.top-45)+'px';
+   tip.textContent=p.name+' winkt dir zu! 👋 · '+Number(p.votes||0).toLocaleString('de-DE')+' Stimmen';
+  }
+ }
+});
 renderer.domElement.addEventListener('pointermove',e=>{if(drag){yaw-=(e.clientX-lastX)*.006;tilt=Math.max(.12,Math.min(1.1,tilt+(e.clientY-lastY)*.003));lastX=e.clientX;lastY=e.clientY;tip.style.display='none';needsRender=true}else{const p=pick(e);tip.style.display=p?'block':'none';if(p){const b=host.getBoundingClientRect();tip.style.left=Math.max(4,Math.min(e.clientX-b.left+12,b.width-225))+'px';tip.style.top=Math.max(5,e.clientY-b.top-45)+'px';tip.textContent=p.name+' · '+Number(p.votes||0).toLocaleString('de-DE')+' Stimmen'}}});
 renderer.domElement.addEventListener('pointerleave',()=>tip.style.display='none');
 renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();dist=Math.max(19,Math.min(150,dist+e.deltaY*.07));needsRender=true},{passive:false});
@@ -77,12 +89,23 @@ function resize(){const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/h
 window.addEventListener('resize',resize);resize();
 let frame=0,last=0;
 // Small independent walking loops, never leaving the vote-based neighborhood.
+// Each person independently chooses a sequence of smooth, irregular short walks.
+// Different seeds and durations avoid synchronized circular motion.
+function rand(i,k){let x=Math.sin((i+1)*127.1+(k+1)*311.7)*43758.5453;return x-Math.floor(x)}
 function walk(loc,i,now){
- const speed=.00017+(i%7)*.000013,phase=now*speed+i*2.399963;
- const range=.5+(i%6)*.19;
- return {x:loc.x+Math.cos(phase)*range-Math.cos(i*2.399963)*range,
-         z:loc.z+Math.sin(phase)*range-Math.sin(i*2.399963)*range,
-         step:Math.sin(now*.0032+i*1.7),facing:phase+Math.PI*.5};
+ const duration=3200+rand(i,7)*5700;
+ const segment=Math.floor(now/duration),t=(now/duration)-segment;
+ const smooth=t*t*(3-2*t);
+ const radius=.75+rand(i,4)*2.3;
+ function waypoint(k){
+  const angle=rand(i,k*3+11)*Math.PI*2;
+  const dist=Math.sqrt(rand(i,k*3+12))*radius;
+  return {x:loc.x+Math.cos(angle)*dist,z:loc.z+Math.sin(angle)*dist};
+ }
+ const a=waypoint(segment),b=waypoint(segment+1);
+ const x=a.x+(b.x-a.x)*smooth,z=a.z+(b.z-a.z)*smooth;
+ const dx=b.x-a.x,dz=b.z-a.z;
+ return {x,z,step:Math.sin(now*.0042+i*1.3),facing:Math.atan2(dx,dz),moving:Math.hypot(dx,dz)>.1};
 }
 function animate(now){
  requestAnimationFrame(animate);
@@ -94,11 +117,13 @@ function animate(now){
   const loc=locations[i],w=walk(loc,i,now),bob=Math.abs(w.step)*.055*loc.size;
   for(let j=0;j<placements.length;j++){
    const [mesh,dx,dy,dz,rz]=placements[j];
+   const isWaving=i===wavingIndex&&now<wavingUntil;
    const stride=(j===5?-1:j===6?1:j===3?1:j===4?-1:0)*w.step*.22;
+   const wave=j===4&&isWaving ? -2.5+Math.sin(now*.015)*.32 : 0;
    const lift=(j===5?Math.max(0,w.step):j===6?Math.max(0,-w.step):0)*.13*loc.size;
    const a=w.facing,offX=(dx*Math.cos(a)+dz*Math.sin(a))*loc.size,offZ=(-dx*Math.sin(a)+dz*Math.cos(a))*loc.size;
    dummy.position.set(w.x+offX,dy*loc.size+bob+lift,w.z+offZ);
-   dummy.rotation.set(0,a,rz+stride);dummy.scale.setScalar(loc.size);dummy.updateMatrix();
+   dummy.rotation.set(0,a,rz+stride+wave);dummy.scale.setScalar(loc.size);dummy.updateMatrix();
    mesh.setMatrixAt(i,dummy.matrix);
   }
  }
