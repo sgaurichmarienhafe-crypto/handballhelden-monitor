@@ -1,83 +1,243 @@
+
 <!doctype html>
 <html lang="de">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Handballhelden Monitor</title>
 <style>
 body{margin:0;background:#0c1727;color:#f4f7fb;font:16px system-ui,sans-serif}
 main{max-width:1200px;margin:auto;padding:28px}
 h1{font-size:clamp(28px,5vw,46px);margin:0}
-p{color:#b9c6d6}.panel{background:#16263b;border:1px solid #30445c;border-radius:16px;padding:20px;margin:18px 0}
+p{color:#b9c6d6}
+.panel{background:#16263b;border:1px solid #30445c;border-radius:16px;padding:20px;margin:18px 0}
 .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:12px}
 input,select{box-sizing:border-box;width:100%;padding:12px;border:1px solid #536a83;border-radius:9px;background:#0c1727;color:white;font:inherit}
 label{display:block;font-size:13px;color:#cad8e8;margin-bottom:6px}
 .highlights{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
-.person{background:#203954;border-radius:12px;padding:16px}.person strong{font-size:20px}
-.muted{font-size:13px;color:#b9c6d6}table{border-collapse:collapse;width:100%}
+.person{background:#203954;border-radius:12px;padding:16px}
+.person strong{font-size:20px}
+.muted{font-size:13px;color:#b9c6d6}
+table{border-collapse:collapse;width:100%}
 th,td{padding:12px;text-align:left;border-bottom:1px solid #30445c}
-th{position:sticky;top:0;background:#16263b}tr.focus{background:#294966}
-#tablewrap{overflow:auto;max-height:65vh}a{color:#8fdbff}small{color:#bdcbd9}#error{color:#ffbdab}
+th{position:sticky;top:0;background:#16263b}
+tr.focus{background:#294966}
+#tablewrap{overflow:auto;max-height:65vh}
+a{color:#8fdbff}
+small{color:#bdcbd9}
+#error{color:#ffbdab}
 </style>
 </head>
 <body>
 <main>
+
 <h1>🤾 Handballhelden-Monitor</h1>
+
 <p>Unabhängige Auswertung öffentlich sichtbarer Stimmen. Keine offizielle DHB-Rangliste und keine Aussage über die Juryentscheidung.</p>
-<div class="panel"><strong id="status">Daten werden geladen …</strong><p id="updated"></p><div class="highlights" id="highlights"></div></div>
-<div class="panel"><div class="filters">
-<div><label for="search">Name suchen</label><input id="search" placeholder="Name eingeben"></div>
-<div><label for="verband">Landesverband</label><select id="verband"><option value="">Alle</option></select></div>
-<div><label for="kategorie">Kategorie</label><select id="kategorie"><option value="">Alle</option></select></div>
-<div><label for="geschlecht">Geschlecht</label><select id="geschlecht"><option value="">Alle</option></select></div>
-</div><p id="count"></p></div>
-<div class="panel" id="tablewrap"><table><thead><tr><th>Rang*</th><th>Name</th><th>Stimmen</th><th>Landesverband</th><th>Kategorie</th><th>Geschlecht</th></tr></thead><tbody id="results"></tbody></table></div>
-<small>* Rang innerhalb der aktuellen Auswahl aus Kategorie, Landesverband und Geschlecht – unabhängig von der Namenssuche; bei gleicher Stimmenzahl gleicher Rang. Geschlecht wird nicht aus Namen abgeleitet. Quelle: <a href="https://handball-engagiert.de/unsere-handballhelden">handball-engagiert.de</a>. Aktualisierung abhängig vom automatischen Datenabruf.</small>
+
+<div class="panel">
+  <strong id="status">Daten werden geladen …</strong>
+  <p id="updated"></p>
+  <div class="highlights" id="highlights"></div>
+</div>
+
+<div class="panel">
+  <div class="filters">
+    <div>
+      <label for="search">Name suchen</label>
+      <input id="search" placeholder="Name eingeben">
+    </div>
+    <div>
+      <label for="verband">Landesverband</label>
+      <select id="verband"><option value="">Alle</option></select>
+    </div>
+    <div>
+      <label for="kategorie">Kategorie</label>
+      <select id="kategorie"><option value="">Alle</option></select>
+    </div>
+    <div>
+      <label for="geschlecht">Geschlecht (eigene Zuordnung)</label>
+      <select id="geschlecht"><option value="">Alle</option></select>
+    </div>
+  </div>
+  <p id="count"></p>
+</div>
+
+<div class="panel" id="tablewrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Rang*</th>
+        <th>Name</th>
+        <th>Stimmen</th>
+        <th>Landesverband</th>
+        <th>Kategorie</th>
+        <th>Geschlecht</th>
+      </tr>
+    </thead>
+    <tbody id="results"></tbody>
+  </table>
+</div>
+
+<small>
+* Rang innerhalb der Auswahl aus Kategorie, Landesverband und Geschlecht,
+unabhängig von der Namenssuche; bei gleicher Stimmenzahl gleicher Rang.
+Geschlechtsangaben sind eigene, nicht offiziell bestätigte Zuordnungen.
+Quelle:
+<a href="https://handball-engagiert.de/unsere-handballhelden">handball-engagiert.de</a>.
+</small>
+
 <p id="error"></p>
+
 </main>
+
 <script>
-let all=[];
-const $=id=>document.getElementById(id);
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let all = [];
+
+const $ = id => document.getElementById(id);
+
+const esc = s => String(s ?? '').replace(
+  /[&<>"']/g,
+  c => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[c])
+);
+
 function fill(id,key){
-  const values=[...new Set(all.map(x=>x[key]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'de'));
-  $(id).innerHTML='<option value="">Alle</option>'+values.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
+  const values = [...new Set(
+    all.map(x => x[key]).filter(Boolean)
+  )].sort((a,b) => a.localeCompare(b,'de'));
+
+  $(id).innerHTML =
+    '<option value="">Alle</option>' +
+    values.map(x =>
+      `<option value="${esc(x)}">${esc(x)}</option>`
+    ).join('');
 }
+
 function render(){
-  const selection=all.filter(x=>
-    (!$('verband').value||x.verband===$('verband').value)&&
-    (!$('kategorie').value||x.kategorie===$('kategorie').value)&&
-    (!$('geschlecht').value||x.geschlecht===$('geschlecht').value)
-  ).sort((a,b)=>b.votes-a.votes||a.name.localeCompare(b.name,'de'));
-  const ranks=new Map();
-  let last=null,rank=0;
-  selection.forEach((x,i)=>{
-    if(x.votes!==last){rank=i+1;last=x.votes;}
+  const selection = all.filter(x =>
+    (!$('verband').value || x.verband === $('verband').value) &&
+    (!$('kategorie').value || x.kategorie === $('kategorie').value) &&
+    (!$('geschlecht').value || x.geschlecht === $('geschlecht').value)
+  ).sort((a,b) =>
+    b.votes - a.votes ||
+    a.name.localeCompare(b.name,'de')
+  );
+
+  const ranks = new Map();
+  let last = null;
+  let rank = 0;
+
+  selection.forEach((x,i) => {
+    if(x.votes !== last){
+      rank = i + 1;
+      last = x.votes;
+    }
     ranks.set(String(x.id),rank);
   });
-  const search=$('search').value.toLocaleLowerCase('de');
-  const visible=selection.filter(x=>x.name.toLocaleLowerCase('de').includes(search));
-  $('count').textContent=visible.length+' Treffer · '+selection.length+' in der Filterauswahl · '+all.length+' Nominierte insgesamt';
-  $('results').innerHTML=visible.map(x=>
-    `<tr class="${['1152','311'].includes(String(x.id))?'focus':''}"><td>${ranks.get(String(x.id))}</td><td>${esc(x.name)}</td><td><strong>${x.votes.toLocaleString('de-DE')}</strong></td><td>${esc(x.verband)}</td><td>${esc(x.kategorie)}</td><td>${esc(x.geschlecht)}</td></tr>`
-  ).join('')||'<tr><td colspan="6">Keine Treffer</td></tr>';
-  $('highlights').innerHTML=['1152','311'].map(id=>{
-    const x=all.find(p=>String(p.id)===id);
-    if(!x)return '';
-    const place=ranks.get(id);
-    return `<div class="person"><strong>${esc(x.name)}</strong><p>${x.votes.toLocaleString('de-DE')} Stimmen</p><p><strong>${place===undefined?'Nicht in der aktuellen Auswahl':'Platz '+place}</strong></p><span class="muted">${esc(x.kategorie)}</span></div>`;
+
+  const search = $('search').value.toLocaleLowerCase('de');
+
+  const visible = selection.filter(x =>
+    x.name.toLocaleLowerCase('de').includes(search)
+  );
+
+  $('count').textContent =
+    visible.length + ' Treffer · ' +
+    selection.length + ' in der Filterauswahl · ' +
+    all.length + ' Nominierte insgesamt';
+
+  $('results').innerHTML = visible.map(x =>
+    `<tr class="${['1152','311'].includes(String(x.id)) ? 'focus' : ''}">
+      <td>${ranks.get(String(x.id))}</td>
+      <td>${esc(x.name)}</td>
+      <td><strong>${x.votes.toLocaleString('de-DE')}</strong></td>
+      <td>${esc(x.verband)}</td>
+      <td>${esc(x.kategorie)}</td>
+      <td>${esc(x.geschlecht)}</td>
+    </tr>`
+  ).join('') || '<tr><td colspan="6">Keine Treffer</td></tr>';
+
+  $('highlights').innerHTML = ['1152','311'].map(id => {
+    const x = all.find(p => String(p.id) === id);
+    if(!x) return '';
+
+    const place = ranks.get(id);
+
+    return `<div class="person">
+      <strong>${esc(x.name)}</strong>
+      <p>${x.votes.toLocaleString('de-DE')} Stimmen</p>
+      <p><strong>${
+        place === undefined
+          ? 'Nicht in der aktuellen Auswahl'
+          : 'Platz ' + place
+      }</strong></p>
+      <span class="muted">${esc(x.kategorie)}</span>
+    </div>`;
   }).join('');
 }
-fetch('daten.json?cache='+Date.now()).then(r=>{if(!r.ok)throw Error('Daten nicht gefunden');return r.json()}).then(d=>{
-  all=d.personen||[];
-  $('status').textContent=all.length+' Nominierte erfasst';
-  $('updated').textContent='Datenstand: '+(d.stand||'unbekannt');
-  fill('verband','verband');fill('kategorie','kategorie');fill('geschlecht','geschlecht');
-  for(const id of ['search','verband','kategorie','geschlecht'])$(id).addEventListener('input',render);
-  render();
-}).catch(e=>{
-  $('error').textContent='Daten konnten nicht geladen werden: '+e.message;
-  $('status').textContent='Daten nicht verfügbar';
-});
+
+async function laden(){
+  try {
+    const datenAntwort = await fetch('daten.json?cache=' + Date.now());
+
+    if(!datenAntwort.ok){
+      throw Error('daten.json nicht gefunden');
+    }
+
+    const daten = await datenAntwort.json();
+
+    let zuordnungen = {};
+
+    try {
+      const antwort = await fetch('zuordnungen.json?cache=' + Date.now());
+
+      if(antwort.ok){
+        zuordnungen = await antwort.json();
+      } else {
+        $('error').textContent =
+          'Hinweis: zuordnungen.json konnte nicht geladen werden.';
+      }
+    } catch(e) {
+      $('error').textContent =
+        'Hinweis: Geschlechtszuordnungen konnten nicht geladen werden.';
+    }
+
+    all = (daten.personen || []).map(person => ({
+      ...person,
+      geschlecht:
+        ['Mann','Frau'].includes(zuordnungen[String(person.id)])
+          ? zuordnungen[String(person.id)]
+          : 'nicht angegeben'
+    }));
+
+    $('status').textContent = all.length + ' Nominierte erfasst';
+    $('updated').textContent =
+      'Datenstand: ' + (daten.stand || 'unbekannt');
+
+    fill('verband','verband');
+    fill('kategorie','kategorie');
+    fill('geschlecht','geschlecht');
+
+    for(const id of ['search','verband','kategorie','geschlecht']){
+      $(id).addEventListener('input',render);
+    }
+
+    render();
+
+  } catch(e) {
+    $('error').textContent =
+      'Daten konnten nicht geladen werden: ' + e.message;
+    $('status').textContent = 'Daten nicht verfügbar';
+  }
+}
+
+laden();
 </script>
 </body>
 </html>
