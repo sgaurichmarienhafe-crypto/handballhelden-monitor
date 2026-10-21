@@ -5,7 +5,7 @@
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#100d1d;color:#fff;font-family:system-ui,Arial,sans-serif}#room{height:100svh;min-height:530px;position:relative;overflow:hidden;background:#110d1e}canvas{display:block;width:100%;height:100%}.overlay{position:absolute;left:clamp(16px,4vw,65px);top:24px;pointer-events:none;text-shadow:0 2px 16px #000}.overlay small{letter-spacing:.24em;color:#b5e4f6;font-weight:800}.overlay h1{font-size:clamp(2rem,5vw,4.7rem);line-height:.94;letter-spacing:-.07em;margin:14px 0}.overlay p{color:#d8d0e8;max-width:340px}.down{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);color:white;text-decoration:none;padding:12px 24px;background:#271d3de8;border:1px solid #b99ddd;border-radius:30px;font-weight:750;text-align:center;white-space:nowrap}.help{position:absolute;right:22px;top:25px;color:#d9c9e9;text-align:right;font-size:.82rem}.tip{position:absolute;display:none;background:#23172eea;border:1px solid #caa6eb;padding:10px;border-radius:12px;pointer-events:none;z-index:5;max-width:220px}section#liste{padding:45px 15px 70px;max-width:1150px;margin:auto}h2{font-size:clamp(1.7rem,4vw,3rem);letter-spacing:-.04em;margin:0 0 8px}.muted{color:#c5b8d3}iframe{width:100%;height:1300px;border:1px solid #574568;border-radius:18px;background:#0c1727}#error{color:#ffd7a3}
 @media(max-width:600px){.help{top:auto;bottom:90px;right:14px}.overlay p{max-width:230px;font-size:.85rem}iframe{height:1500px}}
 </style></head><body>
-<div id="room"><div id="scene"></div><div class="overlay"><small>OSTFRIESLAND × HANDBALL</small><h1>HANDBALL<br>HELDEN.</h1><p>Alle Nominierten als kleine 3D-Avatare – mit Leben im Raum.</p><p id="count">Lade Nominierte …</p></div><div class="help">Ziehen: drehen<br>Mausrad: zoomen<br>Figur anklicken: winken 👋</div><div id="tip" class="tip"></div><a class="down" href="#liste">↓ Peter, Judith & Rangliste</a></div>
+<div id="room"><div id="scene"></div><div class="overlay"><small>OSTFRIESLAND × HANDBALL</small><h1>HANDBALL<br>HELDEN.</h1><p>Eine neue 3D-Welt mit freundlichen Cartoon-Charakteren, individuellen Wegen und Winken auf Klick.</p><p id="count">Lade Nominierte …</p></div><div class="help">Ziehen: drehen<br>Mausrad: zoomen<br>Figur anklicken: winken 👋</div><div id="tip" class="tip"></div><a class="down" href="#liste">↓ Peter, Judith & Rangliste</a></div>
 <section id="liste"><h2>Peter, Judith & alle Nominierten</h2><p class="muted">Die bewährte Rangliste mit den bestehenden Such- und Filtermöglichkeiten.</p><iframe src="./" title="Bestehender Handballhelden-Monitor"></iframe><p id="error"></p></section>
 <script type="module">
 const host=document.querySelector('#scene'),tip=document.querySelector('#tip'),count=document.querySelector('#count');
@@ -13,9 +13,9 @@ try{
 const T=await import('https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js');
 const scene=new T.Scene();scene.background=new T.Color(0x101827);scene.fog=new T.Fog(0x101827,90,165);
 const camera=new T.PerspectiveCamera(55,1,.1,260);
-const renderer=new T.WebGLRenderer({antialias:false,powerPreference:'low-power'});
+const renderer=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1));renderer.outputColorSpace=T.SRGBColorSpace;host.appendChild(renderer.domElement);
-const flat=c=>new T.MeshBasicMaterial({color:c});
+const flat=c=>new T.MeshLambertMaterial({color:c});scene.add(new T.HemisphereLight(0xe7f4ff,0x58627e,2.0));const sunlight=new T.DirectionalLight(0xffe7c8,2.1);sunlight.position.set(-20,45,28);scene.add(sunlight);
 const ground=new T.Mesh(new T.CircleGeometry(79,80),flat(0x233044));ground.rotation.x=-Math.PI/2;ground.position.set(0,-.07,-28);scene.add(ground);
 for(const [radius,color] of [[7.5,0xffcb79],[20,0x7f9cba],[42,0x405875],[64,0x35465f]]){
  const ring=new T.Mesh(new T.RingGeometry(radius-.065,radius+.065,96),new T.MeshBasicMaterial({color,side:T.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.set(0,-.04,-28);scene.add(ring);
@@ -30,10 +30,15 @@ const data=await r.json(),people=(data.personen||[]).slice().sort((a,b)=>Number(
 const n=people.length;count.textContent=n.toLocaleString('de-DE')+' Menschen im Raum';
 const meshes=[],dummy=new T.Object3D(),tmpColor=new T.Color(),locations=[];
 const skin=[0xffd2b1,0xd7a481,0xa66b50,0xf2c29c,0x7c513c],tops=[0x236ab0,0x327b8d,0xc05c44,0x5d66a3,0x648a6e,0x3f6586,0x9d6a4d],pants=[0x192f48,0x253b59,0x343044,0x314353];
-function part(geometry,kind){const mesh=new T.InstancedMesh(geometry,new T.MeshBasicMaterial({color:0xffffff}),n);mesh.instanceMatrix.setUsage(T.StaticDrawUsage);mesh.userData.kind=kind;meshes.push(mesh);scene.add(mesh);return mesh}
+function part(geometry,kind){const mesh=new T.InstancedMesh(geometry,new T.MeshLambertMaterial({color:0xffffff,roughness:.85}),n);mesh.instanceMatrix.setUsage(T.StaticDrawUsage);mesh.userData.kind=kind;meshes.push(mesh);scene.add(mesh);return mesh}
 const torso=part(new T.SphereGeometry(.65,12,8),'top');
-const head=part(new T.SphereGeometry(.61,12,9),'skin');
-const hair=part(new T.SphereGeometry(.64,12,8,0,Math.PI*2,0,Math.PI*.52),'hair');
+const head=part(new T.SphereGeometry(.62,14,12),'skin');
+const hair=part(new T.SphereGeometry(.66,14,10,0,Math.PI*2,0,Math.PI*.52),'hair');
+const eyes=part(new T.SphereGeometry(.095,8,6),'eyes');
+const pupils=part(new T.SphereGeometry(.052,8,6),'pupils');
+const nose=part(new T.SphereGeometry(.09,8,6),'skin');
+const smile=part(new T.TorusGeometry(.17,.028,5,12,Math.PI),'smile');
+const cheeks=part(new T.SphereGeometry(.105,8,6),'cheeks');
 const armL=part(new T.CylinderGeometry(.17,.19,1.2,6),'skin');
 const armR=part(new T.CylinderGeometry(.17,.19,1.2,6),'skin');
 const legL=part(new T.CylinderGeometry(.22,.23,1.25,6),'pants');
@@ -41,7 +46,10 @@ const legR=part(new T.CylinderGeometry(.22,.23,1.25,6),'pants');
 const shoeL=part(new T.BoxGeometry(.44,.24,.67),'shoes');
 const shoeR=part(new T.BoxGeometry(.44,.24,.67),'shoes');
 const special=[];const styles=Array.from({length:15},(_,i)=>({hair:i%3,build:.86+(i%5)*.07}));
-const placements=[ [torso,0,2.0,0,0],[head,0,3.05,0,0],[hair,0,3.17,0,0],[armL,-.66,2.02,0,-.20],[armR,.66,2.02,0,.20],[legL,-.23,.77,0,-.045],[legR,.23,.77,0,.045],[shoeL,-.23,.12,.16,0],[shoeR,.23,.12,.16,0] ];
+const placements=[[torso,0,2.0,0,0],[head,0,3.05,0,0],[hair,0,3.19,0,0],
+[armL,-.66,2.02,0,-.20],[armR,.66,2.02,0,.20],[legL,-.23,.77,0,-.045],[legR,.23,.77,0,.045],[shoeL,-.23,.12,.16,0],[shoeR,.23,.12,.16,0],
+[eyes,-.23,3.13,.555,0],[eyes,.23,3.13,.555,0],[pupils,-.23,3.13,.635,0],[pupils,.23,3.13,.635,0],
+[nose,0,2.98,.605,0],[smile,0,2.85,.585,0],[cheeks,-.39,2.94,.47,0],[cheeks,.39,2.94,.47,0]];
 const colors=[0,0,0,0,0,0,0,0,0];
 people.forEach((p,i)=>{
  const id=String(p.id),focus=id==='1152'||id==='311';
@@ -49,11 +57,11 @@ people.forEach((p,i)=>{
  const x=Math.cos(angle)*radius,z=-28+Math.sin(angle)*radius;
  const size=focus?1.22:styles[i%15].build;
  const shirt=focus?(id==='1152'?0x2f90d5:0xe46c55):tops[i%tops.length];
- const palette={top:shirt,skin:skin[i%skin.length],hair:[0x29222c,0x6d4832,0xb88a4d,0x473f3a,0xd0b189][i%5],pants:pants[i%pants.length],shoes:0xe3e5e5};
+ const palette={top:shirt,skin:skin[i%skin.length],hair:[0x29222c,0x6d4832,0xb88a4d,0x473f3a,0xd0b189][i%5],pants:pants[i%pants.length],shoes:0xe3e5e5,eyes:0xffffff,pupils:0x26344b,smile:0x793b45,cheeks:0xe58b8f};
  const rot=Math.sin(i*1.71)*.6;
  for(let j=0;j<placements.length;j++){
   const [mesh,dx,dy,dz,rz]=placements[j];dummy.position.set(x+dx*size,dy*size,z+dz*size);
-  dummy.rotation.set(0,rot,rz);dummy.scale.setScalar(size);if(j===0)dummy.scale.set(size*.95,size*1.25,size*.72);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
+  dummy.rotation.set(0,rot,rz);dummy.scale.setScalar(size);if(j===0)dummy.scale.set(size*.95,size*1.25,size*.72);if(j===14)dummy.rotation.x=Math.PI;dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
   tmpColor.setHex(palette[mesh.userData.kind]);mesh.setColorAt(i,tmpColor);
  }
  locations.push({x,z,size});if(focus)special.push({p,x,z,size});
@@ -109,7 +117,7 @@ function walk(loc,i,now){
 }
 function animate(now){
  requestAnimationFrame(animate);
- if(now-last<95&&!needsRender)return;
+ if(now-last<65&&!needsRender)return;
  last=now;needsRender=false;frame++;
  camera.position.set(Math.sin(yaw)*dist*Math.cos(tilt),3+Math.sin(tilt)*dist,-28+Math.cos(yaw)*dist*Math.cos(tilt));camera.lookAt(target);
  // All nine body parts share the same walking position. Instancing keeps GPU draw calls low.
@@ -123,7 +131,7 @@ function animate(now){
    const lift=(j===5?Math.max(0,w.step):j===6?Math.max(0,-w.step):0)*.13*loc.size;
    const a=w.facing,offX=(dx*Math.cos(a)+dz*Math.sin(a))*loc.size,offZ=(-dx*Math.sin(a)+dz*Math.cos(a))*loc.size;
    dummy.position.set(w.x+offX,dy*loc.size+bob+lift,w.z+offZ);
-   dummy.rotation.set(0,a,rz+stride+wave);dummy.scale.setScalar(loc.size);if(j===0)dummy.scale.set(loc.size*.95,loc.size*1.25,loc.size*.72);dummy.updateMatrix();
+   dummy.rotation.set(0,a,rz+stride+wave);dummy.scale.setScalar(loc.size);if(j===0)dummy.scale.set(loc.size*.95,loc.size*1.25,loc.size*.72);if(j===14)dummy.rotation.x=Math.PI;dummy.updateMatrix();
    mesh.setMatrixAt(i,dummy.matrix);
   }
  }
