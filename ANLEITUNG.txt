@@ -1,0 +1,9 @@
+HANDBALLHELDEN-MONITOR
+
+Dieses Paket enthält die fertige Startseite und eine Momentaufnahme der Daten aus der hochgeladenen HTML-Datei.
+
+GitHub: Dateien aus diesem Paket ins Hauptverzeichnis des bestehenden Repositories hochladen. Die Ordnerstruktur .github/workflows muss erhalten bleiben.
+
+Automatische Aktualisierung: GitHub Actions läuft planmäßig alle drei Stunden (nicht sekundengenau). Die Webseite muss von GitHub erreichbar sein, und Actions braucht Schreibrechte: Settings > Actions > General > Workflow permissions > Read and write permissions. Der Workflow kann über Actions > Stimmen aktualisieren > Run workflow auch manuell gestartet werden.
+
+WICHTIG: Der Abruf der Live-Seite wurde in dieser Umgebung nicht erfolgreich getestet. Falls die offizielle Webseite ihre Struktur ändert oder den Zugriff blockiert, bleibt die letzte gespeicherte Momentaufnahme erhalten. Der Workflow meldet dann einen Fehler. Keine amtliche Rangliste. Geschlecht wird ohne verlässliche Quelle nicht zugeschrieben.
