@@ -5,7 +5,7 @@ from lxml import html
 URL='https://handball-engagiert.de/unsere-handballhelden'
 req=urllib.request.Request(URL,headers={'User-Agent':'Mozilla/5.0 (compatible; HandballheldenMonitor/1.0)'})
 with urllib.request.urlopen(req,timeout=45) as resp: content=resp.read()
-root=html.fromstring(content)
+root=html.fromstring(content.decode('utf-8'))
 rows=[]
 for card in root.xpath('//article[contains(concat(" ",normalize-space(@class)," ")," hbe-card ")]'):
  b=card.xpath('.//button[@data-hbe-vote-nid]')
